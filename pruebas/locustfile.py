@@ -3,13 +3,11 @@ from locust import HttpUser, task, between
 
 
 class ApiUser(HttpUser):
-    # Pausa entre tareas de cada usuario simulado (segundos).
-    # Más pausa = menos RPS por usuario. Justifícalo en el informe.
+
     wait_time = between(1, 3)
 
     HEADERS = {"Accept": "application/json"}
 
-    # ---------- Tareas GET (predominantes) ----------
     @task(5)
     def listar_usuarios(self):
         with self.client.get("/api/users", headers=self.HEADERS,
@@ -28,11 +26,8 @@ class ApiUser(HttpUser):
                              name="GET /api/users/over-twenty", catch_response=True) as r:
             self._validar_get(r)
 
-    # ---------- Tarea POST (minoritaria) ----------
     @task(1)
     def alta_en_lote(self):
-        # Correos únicos por petición para evitar 422 por duplicados.
-        # AJUSTA los nombres de campos según el controlador/README del curso.
         usuarios = [
             {
                 "name": f"Load User {i}",
@@ -49,7 +44,7 @@ class ApiUser(HttpUser):
             else:
                 r.success()
 
-    # ---------- Validación ----------
+    # Validación
     def _validar_get(self, r):
         if r.status_code != 200:
             r.failure(f"HTTP {r.status_code}")
@@ -57,7 +52,7 @@ class ApiUser(HttpUser):
         try:
             body = r.json()
         except ValueError:
-            r.failure("Respuesta no es JSON válido")
+            r.failure("La respuesta no es un JSON válido")
             return
         if "data" not in body:
             r.failure("Falta la clave 'data' en el JSON")
